@@ -126,7 +126,7 @@ Internal network names remain functional. User-facing SSID names are branded.
 
 | SSID | Internal network | Notes |
 |---|---|---|
-| `ShuMK Secure` | `secure` | WPA3-Personal in phase 1 |
+| `ShuMK Secure` | `secure` | WPA3-Enterprise with `802.1X` / `EAP-TLS` |
 | `ShuMK` | `home` | WPA3-Personal in phase 1 |
 | `ShuMK IoT` | `iot` | WPA2/WPA3 transition mode in phase 1 |
 | `ShuMK Guest` | `guest` | WPA2/WPA3 transition mode with captive portal |
@@ -206,16 +206,37 @@ Policy should enforce standard DNS to the approved resolver only:
 - `guest` should be blocked from internal DNS entirely
 - blocking all encrypted DNS variants perfectly is out of scope for phase 1
 
+Phase 1 expectation:
+
+- `rainier` is the required and documented resolver for trusted networks
+- firewall policy must enforce standard DNS to `rainier`
+- encrypted DNS bypass is treated as an accepted residual risk in phase 1, not as permitted design intent
+- if trusted Apple clients show material DNS bypass behavior, add targeted platform controls or tighter egress policy in a later phase
+
 ## Authentication and Wi-Fi posture
 
 ### Phase 1 authentication
 
-- `secure`: WPA3-Personal
+- `secure`: WPA3-Enterprise with `802.1X` / `EAP-TLS`
 - `home`: WPA3-Personal
 - `iot`: WPA2/WPA3 transition mode
 - `guest`: WPA2/WPA3 transition mode with captive portal
 
-WPA3-Enterprise is a later upgrade path and is intentionally not required for phase 1 due to current implementation instability.
+`secure` uses per-device certificate identity rather than a shared Wi-Fi password.
+
+Rationale:
+
+- `secure` is the highest-privilege enclave
+- device-level certificate identity supports revocation and attribution
+- a shared WPA3-Personal passphrase is not an acceptable long-term control for the admin enclave
+
+Implementation model for `secure`:
+
+- UniFi SSID backed by external RADIUS
+- FreeRADIUS on `rainier`
+- internal CA on `rainier` for RADIUS and client certificates
+- one Apple Wi-Fi profile per device
+- TLS compatibility floor of `1.2` with `1.3` preferred upper bound
 
 ### Phase 1 Wi-Fi tuning posture
 
@@ -228,6 +249,12 @@ Keep Wi-Fi optimization conservative at launch:
 - allow UniFi to determine radio behavior initially
 
 Tune later from observed client behavior after VLAN, DHCP, and firewall policy are stable.
+
+### Authentication rollout posture
+
+- `secure` is intended to launch on `WPA3-Enterprise`, not as a temporary WPA3-Personal network
+- `home`, `iot`, and `guest` remain on simpler authentication models in phase 1
+- if `secure` needs temporary fallback during cutover, that fallback should be treated as a migration exception and not as the documented target state
 
 ## Device placement
 

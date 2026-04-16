@@ -128,16 +128,27 @@ Use explicit access first. Add discovery exceptions only for proven Apple-specif
 - implement the VLAN and subnet plan
 - move devices into target networks
 - enforce baseline inter-zone rules
+- implement `secure` with `WPA3-Enterprise` and per-device certificate identity
 - keep admin access broad within `secure` and `vpn`
 - keep technical service definitions minimal where the architectural intent is already clear
 
 ### Phase 2
 
 - tighten admin surfaces further if desired
-- move `secure` to WPA3-Enterprise when stable
 - consider IoT client isolation
 - add narrowly scoped discovery exceptions only if testing proves a need
 - refine service-level rule definitions where rollout experience justifies them
+
+## Identity posture
+
+`secure` is the only network that requires network-layer device identity in phase 1.
+
+Implementation intent:
+
+- one certificate-backed identity per approved admin device
+- no shared Wi-Fi passphrase for the `secure` enclave
+- certificate revocation replaces shared secret rotation as the normal offboarding path
+- `vpn` remains equivalent in privilege posture to `secure`, but its authentication mechanism is governed separately by the remote-access platform
 
 ## Implementation guidance
 
