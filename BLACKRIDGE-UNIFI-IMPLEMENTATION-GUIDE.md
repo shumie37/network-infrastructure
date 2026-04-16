@@ -6,7 +6,7 @@ This document defines the recommended step-by-step UniFi implementation sequence
 
 It assumes:
 
-- UniFi is the control plane for gateway, switching, APs, Wi-Fi, DHCP, VLANs, firewall policy, and Teleport
+- UniFi is the control plane for gateway, switching, APs, Wi-Fi, DHCP, VLANs, firewall policy, and WireGuard remote access
 - configuration is performed primarily through the UniFi WebUI
 - the current network is still serving live devices
 - the target architecture is defined in:
@@ -19,6 +19,7 @@ UniFi feature alignment for this guide:
 - use UniFi `WiFi` for SSID mapping
 - use UniFi `Profiles` for switch-port profiles
 - use UniFi external RADIUS server configuration for `ShuMK Secure`
+- use UniFi WireGuard server and peer configuration for the `vpn` zone
 - use UniFi Zone-Based Firewall / Policy Engine constructs where available instead of older per-interface firewall rule style
 - do not use UniFi gateway-hosted DNS record features as the authoritative DNS model for trusted networks, because trusted clients are intended to use `rainier` directly
 
@@ -94,6 +95,7 @@ Before cutover day, prepare these while the current network remains untouched:
    - external RADIUS server object
    - WPA3-Enterprise SSID binding
    - successful join from one admin device
+7. Confirm the UniFi gateway supports the intended WireGuard server workflow and note any public-IP or upstream port-forward requirement for UDP `51820`.
 
 Do not start the UniFi rebuild until the `secure` authentication stack is already working.
 
@@ -257,6 +259,35 @@ Expected intent:
 Validation checkpoint:
 
 - all needed profiles exist before any port is reassigned
+
+## Phase 4.5: Stand up remote access on WireGuard
+
+Goal:
+
+- replace Teleport assumptions with a documented, explicit WireGuard remote-admin path
+
+UniFi WebUI area:
+
+- `Teleport & VPN` or current UniFi VPN settings area for the gateway generation in use
+
+Steps:
+
+1. Enable the UniFi WireGuard server on the gateway.
+2. Bind it to the `vpn` address plan if UniFi exposes that choice directly.
+3. Create one test admin peer first.
+4. Export or scan the peer configuration into a standard WireGuard client.
+5. Confirm:
+   - the client receives an address in the `vpn` subnet
+   - full-tunnel behavior matches the target design
+   - DNS handed to the client resolves through `rainier`
+   - admin surfaces are reachable with the same posture as `secure`
+6. Only after the first peer works, add additional admin peers.
+
+Validation checkpoint:
+
+- at least one WireGuard admin client can reach the site remotely
+- `vpn` policy matches `secure`
+- there is no remaining dependency on Teleport for the documented target state
 
 ## Phase 5: Move network gear management to `infrastructure`
 

@@ -111,7 +111,7 @@ Remote-access network zone.
 
 Intended use:
 
-- UniFi Teleport clients only
+- UniFi WireGuard remote clients only
 
 Policy objective:
 
@@ -307,7 +307,7 @@ Tune later from observed client behavior after VLAN, DHCP, and firewall policy a
 
 ### `vpn`
 
-- UniFi Teleport remote clients
+- UniFi WireGuard remote clients
 - same policy posture as `secure`
 
 ## Routing model
@@ -376,7 +376,7 @@ Default posture:
 
 ### Technology
 
-- UniFi Teleport
+- UniFi WireGuard server on the UniFi gateway
 
 ### Posture
 
@@ -385,6 +385,8 @@ Default posture:
 - full-tunnel
 - DNS handed out as `rainier`
 - same privilege posture as `secure`
+- explicit per-device peer configuration
+- standard WireGuard clients rather than WiFiman / Teleport dependency
 
 ## Rollout model
 
@@ -396,7 +398,7 @@ Objectives:
 - re-IP infrastructure into the new plan immediately
 - deploy target SSIDs
 - move devices directly into their target networks
-- stand up Teleport using the `vpn` network model
+- stand up WireGuard using the `vpn` network model
 - apply baseline firewall boundaries
 
 Recommended migration order:
@@ -404,13 +406,13 @@ Recommended migration order:
 1. infrastructure first
 2. SSIDs and VLAN mapping
 3. clients into target networks
-4. VPN / Teleport
+4. VPN / WireGuard
 
 ### Phase 2: hardening
 
 Objectives:
 
-- move `secure` to WPA3-Enterprise once RADIUS is stable
+- refine `secure` operations and certificate lifecycle once RADIUS is stable
 - tighten admin-surface exposure further if needed
 - evaluate IoT client isolation
 - add service-level tightening where rollout experience justifies it

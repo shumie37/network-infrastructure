@@ -19,7 +19,7 @@ It is intentionally split into:
 | `secure` | `iot` | deny by default | prefer control through `infrastructure` and Home Assistant |
 | `secure` | `guest` | deny | no meaningful use case |
 | `secure` | internet | allow | normal outbound access |
-| `vpn` | same as `secure` | same as `secure` | UniFi Teleport full-tunnel remote access |
+| `vpn` | same as `secure` | same as `secure` | UniFi WireGuard full-tunnel remote access |
 | `home` | `secure` | deny | protect admin enclave |
 | `home` | `infrastructure` | allow by exception | approved services only |
 | `home` | `iot` | allow | direct control is allowed |
@@ -35,6 +35,54 @@ It is intentionally split into:
 | `guest` | any internal network | deny | fully untrusted |
 | `guest` | internet | allow | captive portal and internet only |
 | `guest` | guest peers | deny | client isolation enabled |
+
+## Zone-based policy table
+
+This table is the intended phase 1 Zone-Based Firewall / Policy Table translation of the access model above.
+
+Assumptions:
+
+- rules are stateful, so established and related return traffic is not listed separately
+- `Any` in `Src.` or `Dst.` means the whole zone unless a narrower host or object is named
+- named destinations such as `Rainier DNS` or `Approved NAS Services` should be implemented as UniFi objects
+- lower IDs are intended to be evaluated earlier
+
+| Name | Action | IP Version | Protocol | Src. Zone | Src. | Src. Port | Dst. Zone | Dst. | Dst. Port | ID |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `Allow Secure to Infrastructure` | `Allow` | `Both` | `All` | `secure` | `Any` | `Any` | `infrastructure` | `Any` | `Any` | `10000` |
+| `Allow Secure to Home` | `Allow` | `Both` | `All` | `secure` | `Any` | `Any` | `home` | `Any` | `Any` | `10010` |
+| `Block Secure to IoT` | `Block` | `Both` | `All` | `secure` | `Any` | `Any` | `iot` | `Any` | `Any` | `10020` |
+| `Block Secure to Guest` | `Block` | `Both` | `All` | `secure` | `Any` | `Any` | `guest` | `Any` | `Any` | `10030` |
+| `Allow Secure to Internet` | `Allow` | `Both` | `All` | `secure` | `Any` | `Any` | `external` | `Any` | `Any` | `10040` |
+| `Allow VPN to Infrastructure` | `Allow` | `Both` | `All` | `vpn` | `Any` | `Any` | `infrastructure` | `Any` | `Any` | `10100` |
+| `Allow VPN to Home` | `Allow` | `Both` | `All` | `vpn` | `Any` | `Any` | `home` | `Any` | `Any` | `10110` |
+| `Block VPN to IoT` | `Block` | `Both` | `All` | `vpn` | `Any` | `Any` | `iot` | `Any` | `Any` | `10120` |
+| `Block VPN to Guest` | `Block` | `Both` | `All` | `vpn` | `Any` | `Any` | `guest` | `Any` | `Any` | `10130` |
+| `Allow VPN to Internet` | `Allow` | `Both` | `All` | `vpn` | `Any` | `Any` | `external` | `Any` | `Any` | `10140` |
+| `Block Home to Secure` | `Block` | `Both` | `All` | `home` | `Any` | `Any` | `secure` | `Any` | `Any` | `10200` |
+| `Allow Home to IoT` | `Allow` | `Both` | `All` | `home` | `Any` | `Any` | `iot` | `Any` | `Any` | `10210` |
+| `Allow Home to Rainier DNS UDP` | `Allow` | `IPv4` | `UDP` | `home` | `Any` | `Any` | `infrastructure` | `Rainier DNS` | `53` | `10220` |
+| `Allow Home to Rainier DNS TCP` | `Allow` | `IPv4` | `TCP` | `home` | `Any` | `Any` | `infrastructure` | `Rainier DNS` | `53` | `10221` |
+| `Allow Home to Approved NAS Services` | `Allow` | `Both` | `TCP` | `home` | `Any` | `Any` | `infrastructure` | `Approved NAS Services` | `Object Ports` | `10230` |
+| `Block Home to Infrastructure Default` | `Block` | `Both` | `All` | `home` | `Any` | `Any` | `infrastructure` | `Any` | `Any` | `10290` |
+| `Allow Home to Internet` | `Allow` | `Both` | `All` | `home` | `Any` | `Any` | `external` | `Any` | `Any` | `10299` |
+| `Block IoT to Secure` | `Block` | `Both` | `All` | `iot` | `Any` | `Any` | `secure` | `Any` | `Any` | `10300` |
+| `Block IoT to Home` | `Block` | `Both` | `All` | `iot` | `Any` | `Any` | `home` | `Any` | `Any` | `10310` |
+| `Allow IoT to Rainier DNS UDP` | `Allow` | `IPv4` | `UDP` | `iot` | `Any` | `Any` | `infrastructure` | `Rainier DNS` | `53` | `10320` |
+| `Allow IoT to Rainier DNS TCP` | `Allow` | `IPv4` | `TCP` | `iot` | `Any` | `Any` | `infrastructure` | `Rainier DNS` | `53` | `10321` |
+| `Allow IoT to Approved Infrastructure Integrations` | `Allow` | `Both` | `All` | `iot` | `Any` | `Any` | `infrastructure` | `Approved Integration Targets` | `Object Ports` | `10330` |
+| `Block IoT to Infrastructure Default` | `Block` | `Both` | `All` | `iot` | `Any` | `Any` | `infrastructure` | `Any` | `Any` | `10390` |
+| `Allow IoT to Internet` | `Allow` | `Both` | `All` | `iot` | `Any` | `Any` | `external` | `Any` | `Any` | `10399` |
+| `Block Infrastructure to Secure` | `Block` | `Both` | `All` | `infrastructure` | `Any` | `Any` | `secure` | `Any` | `Any` | `10400` |
+| `Allow Infrastructure to Approved IoT Services` | `Allow` | `Both` | `All` | `infrastructure` | `Rainier and Approved Automation Hosts` | `Any` | `iot` | `Approved IoT Targets` | `Object Ports` | `10410` |
+| `Block Infrastructure to Home` | `Block` | `Both` | `All` | `infrastructure` | `Any` | `Any` | `home` | `Any` | `Any` | `10420` |
+| `Allow Infrastructure to Internet` | `Allow` | `Both` | `All` | `infrastructure` | `Any` | `Any` | `external` | `Any` | `Any` | `10499` |
+| `Block Guest to Secure` | `Block` | `Both` | `All` | `guest` | `Any` | `Any` | `secure` | `Any` | `Any` | `10500` |
+| `Block Guest to Infrastructure` | `Block` | `Both` | `All` | `guest` | `Any` | `Any` | `infrastructure` | `Any` | `Any` | `10510` |
+| `Block Guest to Home` | `Block` | `Both` | `All` | `guest` | `Any` | `Any` | `home` | `Any` | `Any` | `10520` |
+| `Block Guest to IoT` | `Block` | `Both` | `All` | `guest` | `Any` | `Any` | `iot` | `Any` | `Any` | `10530` |
+| `Block Guest to Guest` | `Block` | `Both` | `All` | `guest` | `Any` | `Any` | `guest` | `Any` | `Any` | `10540` |
+| `Allow Guest to Internet` | `Allow` | `Both` | `All` | `guest` | `Any` | `Any` | `external` | `Any` | `Any` | `10599` |
 
 ## Service intent notes
 
@@ -148,7 +196,7 @@ Implementation intent:
 - one certificate-backed identity per approved admin device
 - no shared Wi-Fi passphrase for the `secure` enclave
 - certificate revocation replaces shared secret rotation as the normal offboarding path
-- `vpn` remains equivalent in privilege posture to `secure`, but its authentication mechanism is governed separately by the remote-access platform
+- `vpn` remains equivalent in privilege posture to `secure`, but its authentication mechanism is governed separately through UniFi WireGuard peer management
 
 ## Implementation guidance
 
