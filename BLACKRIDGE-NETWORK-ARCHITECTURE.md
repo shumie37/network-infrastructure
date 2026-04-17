@@ -90,7 +90,7 @@ Intended use:
 
 Phase 1 keeps IoT simple: normal internet access, no broad access into other internal networks, and no client isolation inside the IoT network yet.
 
-### `guest`
+### `hotspot`
 
 Fully untrusted guest network.
 
@@ -126,10 +126,10 @@ Internal network names remain functional. User-facing SSID names are branded.
 
 | SSID | Internal network | Notes |
 |---|---|---|
-| `ShuMK Secure` | `secure` | WPA3-Enterprise with `802.1X` / `EAP-TLS` |
+| `Blackridge` | `secure` | WPA3-Enterprise with `802.1X` / `EAP-TLS` |
 | `ShuMK` | `home` | WPA3-Personal in phase 1 |
 | `ShuMK IoT` | `iot` | WPA2/WPA3 transition mode in phase 1 |
-| `ShuMK Guest` | `guest` | WPA2/WPA3 transition mode with captive portal |
+| `ShuMK Guest` | `hotspot` | WPA2/WPA3 transition mode with captive portal |
 
 `infrastructure` has no Wi-Fi SSID in phase 1.
 
@@ -137,12 +137,12 @@ Internal network names remain functional. User-facing SSID names are branded.
 
 | VLAN | Network | Subnet | Gateway |
 |---|---|---|---|
-| 10 | `secure` | `192.168.10.0/24` | `192.168.10.1` |
-| 20 | `infrastructure` | `192.168.20.0/24` | `192.168.20.1` |
-| 30 | `home` | `192.168.30.0/24` | `192.168.30.1` |
-| 40 | `iot` | `192.168.40.0/24` | `192.168.40.1` |
-| 50 | `guest` | `192.168.50.0/24` | `192.168.50.1` |
-| 60 | `vpn` | `192.168.60.0/24` | `192.168.60.1` |
+| 1 | `infrastructure` | `192.168.10.0/24` | `192.168.10.1` |
+| 2 | `secure` | `192.168.20.0/24` | `192.168.20.1` |
+| 3 | `home` | `192.168.30.0/24` | `192.168.30.1` |
+| 4 | `iot` | `192.168.40.0/24` | `192.168.40.1` |
+| 5 | `hotspot` | `192.168.50.0/24` | `192.168.50.1` |
+| 6 | `vpn` | `192.168.60.0/24` | `192.168.60.1` |
 
 `vpn` is a routed remote-access network, not an SSID-backed LAN.
 
@@ -160,18 +160,18 @@ Internal network names remain functional. User-facing SSID names are branded.
 
 | IP | Host |
 |---|---|
-| `192.168.20.1` | Blackridge Gateway |
-| `192.168.20.2` | Blackridge Switch |
-| `192.168.20.3` | Blackridge AP (Office) |
-| `192.168.20.4` | Blackridge AP (Living Room) |
-| `192.168.20.5` | reserved for future network gear |
-| `192.168.20.6` | reserved for future network gear |
-| `192.168.20.7` | reserved for future network gear |
-| `192.168.20.8` | reserved for future network gear |
-| `192.168.20.9` | reserved for future network gear |
-| `192.168.20.10` | Rainier |
-| `192.168.20.20` | Blackcomb |
-| `192.168.20.30` | NAS |
+| `192.168.10.1` | Blackridge Gateway |
+| `192.168.10.2` | Blackridge Switch |
+| `192.168.10.3` | Blackridge AP (Office) |
+| `192.168.10.4` | Blackridge AP (Living Room) |
+| `192.168.10.5` | reserved for future network gear |
+| `192.168.10.6` | reserved for future network gear |
+| `192.168.10.7` | reserved for future network gear |
+| `192.168.10.8` | reserved for future network gear |
+| `192.168.10.9` | reserved for future network gear |
+| `192.168.10.10` | Rainier |
+| `192.168.10.20` | Blackcomb |
+| `192.168.10.30` | NAS |
 
 ## DHCP and DNS model
 
@@ -180,7 +180,7 @@ Internal network names remain functional. User-facing SSID names are branded.
 - the UniFi gateway provides DHCP for every network
 - `infrastructure` uses static or reserved addresses as needed
 - `secure` uses a small DHCP scope with no client-side static IPs
-- `home`, `iot`, and `guest` use normal DHCP pools
+- `home`, `iot`, and `hotspot` use normal DHCP pools
 - `vpn` receives gateway-provided addressing within the `192.168.60.0/24` subnet
 
 ### DNS
@@ -193,7 +193,7 @@ Internal network names remain functional. User-facing SSID names are branded.
 - `iot`
 - `vpn`
 
-`guest` is the only exception:
+`hotspot` is the only exception:
 
 - clients use the gateway as DNS
 - the gateway resolves upstream using DoH
@@ -203,7 +203,7 @@ Internal network names remain functional. User-facing SSID names are branded.
 Policy should enforce standard DNS to the approved resolver only:
 
 - internal trusted networks should be blocked from sending port 53 DNS to anything except `rainier`
-- `guest` should be blocked from internal DNS entirely
+- `hotspot` should be blocked from internal DNS entirely
 - blocking all encrypted DNS variants perfectly is out of scope for phase 1
 
 Phase 1 expectation:
@@ -220,7 +220,7 @@ Phase 1 expectation:
 - `secure`: WPA3-Enterprise with `802.1X` / `EAP-TLS`
 - `home`: WPA3-Personal
 - `iot`: WPA2/WPA3 transition mode
-- `guest`: WPA2/WPA3 transition mode with captive portal
+- `hotspot`: WPA2/WPA3 transition mode with captive portal
 
 `secure` uses per-device certificate identity rather than a shared Wi-Fi password.
 
@@ -253,7 +253,7 @@ Tune later from observed client behavior after VLAN, DHCP, and firewall policy a
 ### Authentication rollout posture
 
 - `secure` is intended to launch on `WPA3-Enterprise`, not as a temporary WPA3-Personal network
-- `home`, `iot`, and `guest` remain on simpler authentication models in phase 1
+- `home`, `iot`, and `hotspot` remain on simpler authentication models in phase 1
 - if `secure` needs temporary fallback during cutover, that fallback should be treated as a migration exception and not as the documented target state
 
 ## Device placement
@@ -301,7 +301,7 @@ Tune later from observed client behavior after VLAN, DHCP, and firewall policy a
 - Pura (Office)
 - similar IoT endpoints
 
-### `guest`
+### `hotspot`
 
 - transient guest devices only
 
@@ -313,7 +313,7 @@ Tune later from observed client behavior after VLAN, DHCP, and firewall policy a
 ## Routing model
 
 - inter-VLAN routing is enabled on the gateway
-- `guest` is the only network treated as fully isolated in practice
+- `hotspot` is the only network treated as fully isolated in practice
 - all other networks are routable, with boundaries enforced by firewall policy
 - `vpn` is full-tunnel and follows `secure` policy
 
@@ -332,15 +332,15 @@ Tune later from observed client behavior after VLAN, DHCP, and firewall policy a
 
 - link type: trunk
 - native / management network: `infrastructure`
-- allowed VLANs: `10`, `20`, `30`, `40`, `50`
+- allowed VLANs: `2`, `3`, `4`, `5`
 
 #### Switch to APs
 
 - link type: trunk
 - native / management network: `infrastructure`
-- allowed VLANs: `10`, `20`, `30`, `40`, `50`
+- allowed VLANs: `2`, `3`, `4`, `5`
 
-This allows each AP to present `secure`, `home`, `iot`, and `guest` SSIDs while remaining managed on `infrastructure`.
+This allows each AP to present `secure`, `home`, `iot`, and `hotspot` SSIDs while remaining managed on `infrastructure`.
 
 ### Access port policy
 

@@ -18,7 +18,7 @@ UniFi feature alignment for this guide:
 - use UniFi `Networks` for VLAN-backed routed networks
 - use UniFi `WiFi` for SSID mapping
 - use UniFi `Profiles` for switch-port profiles
-- use UniFi external RADIUS server configuration for `ShuMK Secure`
+- use UniFi external RADIUS server configuration for `Blackridge`
 - use UniFi WireGuard server and peer configuration for the `vpn` zone
 - use UniFi Zone-Based Firewall / Policy Engine constructs where available instead of older per-interface firewall rule style
 - do not use UniFi gateway-hosted DNS record features as the authoritative DNS model for trusted networks, because trusted clients are intended to use `rainier` directly
@@ -91,7 +91,7 @@ Before cutover day, prepare these while the current network remains untouched:
 5. Confirm `rainier` firewall rules will allow:
    - DNS from trusted VLANs
    - RADIUS from UniFi infrastructure
-6. Confirm the `ShuMK Secure` RADIUS path using the current UniFi UI model:
+6. Confirm the `Blackridge` RADIUS path using the current UniFi UI model:
    - external RADIUS server object
    - WPA3-Enterprise SSID binding
    - successful join from one admin device
@@ -116,11 +116,11 @@ Steps:
    - SSIDs
    - port profiles
 3. Confirm final addressing plan:
-   - `secure`: `192.168.10.0/24`
-   - `infrastructure`: `192.168.20.0/24`
+   - `infrastructure`: `192.168.10.0/24`
+   - `secure`: `192.168.20.0/24`
    - `home`: `192.168.30.0/24`
    - `iot`: `192.168.40.0/24`
-   - `guest`: `192.168.50.0/24`
+   - `hotspot`: `192.168.50.0/24`
    - `vpn`: `192.168.60.0/24`
 
 Validation checkpoint:
@@ -141,16 +141,16 @@ Steps:
 
 1. Leave the current default or legacy LAN in place.
 2. Create the new routed networks:
-   - `secure` / VLAN `10`
-   - `infrastructure` / VLAN `20`
-   - `home` / VLAN `30`
-   - `iot` / VLAN `40`
-   - `guest` / VLAN `50`
+   - `infrastructure` / VLAN `1`
+   - `secure` / VLAN `2`
+   - `home` / VLAN `3`
+   - `iot` / VLAN `4`
+   - `hotspot` / VLAN `5`
 3. Create the `vpn` remote-access network definition if UniFi requires it separately.
 4. Enable DHCP for each network per the target design.
 5. Set DNS server behavior:
    - trusted networks point to `rainier`
-   - `guest` uses gateway DNS
+   - `hotspot` uses gateway DNS
 6. If the controller exposes mDNS or discovery helpers per network, leave them off by default for phase 1 unless a later validation step proves they are required.
 7. Do not create UniFi gateway-local DNS records as a substitute for the trusted-network DNS model.
 8. Do not remove or repurpose the current live LAN yet.
@@ -175,20 +175,20 @@ Steps:
 
 1. Leave the old Wi-Fi network active.
 2. Create:
-   - `ShuMK Secure`
+   - `Blackridge`
    - `ShuMK`
    - `ShuMK IoT`
    - `ShuMK Guest`
 3. Bind each SSID to its new network:
-   - `ShuMK Secure` -> `secure`
+   - `Blackridge` -> `secure`
    - `ShuMK` -> `home`
    - `ShuMK IoT` -> `iot`
-   - `ShuMK Guest` -> `guest`
+   - `ShuMK Guest` -> `hotspot`
 4. Configure authentication:
-   - `ShuMK Secure`: `WPA3-Enterprise` with external RADIUS
+   - `Blackridge`: `WPA3-Enterprise` with external RADIUS
    - `ShuMK`: `WPA3-Personal`
    - `ShuMK IoT`: `WPA2/WPA3` transition
-   - `ShuMK Guest`: guest posture per controller capabilities
+   - `ShuMK Guest`: hotspot / guest posture per controller capabilities
 5. Keep guest portal and hotspot complexity minimal until basic segmentation is validated.
 6. Keep tuning conservative:
    - band steering off
@@ -213,12 +213,12 @@ Why first:
 
 Steps:
 
-1. In UniFi, configure the external RADIUS profile for `ShuMK Secure`.
+1. In UniFi, configure the external RADIUS profile for `Blackridge`.
 2. Confirm the RADIUS server points at `rainier`.
 3. Install the Apple `.mobileconfig` on one admin Mac.
-4. Join `ShuMK Secure`.
+4. Join `Blackridge`.
 5. Verify:
-   - the device gets an address in `192.168.10.0/24`
+   - the device gets an address in `192.168.20.0/24`
    - DNS uses `rainier`
    - UniFi admin is reachable
    - `rainier`, NAS, and `blackcomb` admin surfaces are reachable
@@ -245,14 +245,14 @@ Create profiles for at least:
 - `Infrastructure Native`
 - `Home Native`
 - `IoT Native`
-- `Guest Native`
+- `Hotspot Native`
 - trunk profile for AP uplinks
 
 Expected intent:
 
 - AP uplinks should carry:
   - native `infrastructure`
-  - tagged `secure`, `home`, `iot`, `guest`
+  - tagged `secure`, `home`, `iot`, `hotspot`
 - fixed infrastructure hosts should land on `infrastructure`
 - user wired ports should land on the correct access VLAN
 
@@ -316,7 +316,7 @@ Important:
 Validation checkpoint:
 
 - gateway, switch, and APs all show healthy
-- infrastructure management addresses align with `192.168.20.0/24`
+- infrastructure management addresses align with `192.168.10.0/24`
 - `secure` clients can still administer UniFi
 
 ## Phase 6: Move fixed infrastructure hosts
@@ -339,7 +339,7 @@ Why `rainier` last:
 Steps per host:
 
 1. Update the switch port profile for the host’s wired port.
-2. Move the host to its target `192.168.20.x` address.
+2. Move the host to its target `192.168.10.x` address.
 3. Confirm:
    - ping from `secure`
    - DNS reachability if relevant
@@ -356,7 +356,7 @@ Before moving `rainier`, confirm:
 
 Validation checkpoint:
 
-- all infrastructure hosts are reachable on `192.168.20.0/24`
+- all infrastructure hosts are reachable on `192.168.10.0/24`
 - `secure` still has stable admin access
 
 ## Phase 7: Apply firewall policy in stages
@@ -383,10 +383,10 @@ Recommended order:
    - `infrastructure`
    - `home`
    - `iot`
-   - `guest`
+   - `hotspot`
    - `vpn`
    - `external`
-2. Add rules for `guest` isolation first.
+2. Add rules for `hotspot` isolation first.
 3. Add explicit allows for trusted DNS to `rainier`.
 4. Add `home` -> `infrastructure` narrow allows.
 5. Add `iot` -> `infrastructure` narrow allows.
@@ -403,7 +403,7 @@ Validation checkpoint:
 
 - DNS works from trusted networks
 - admin surfaces are reachable only from `secure` and `vpn`
-- guest has internet only
+- hotspot has internet only
 
 ## Phase 8: Migrate general client networks
 
@@ -415,7 +415,7 @@ Recommended order:
 
 1. `home`
 2. `iot`
-3. `guest`
+3. `hotspot`
 
 ### `home`
 
@@ -440,7 +440,7 @@ Steps:
 4. Leave unusual or fragile IoT devices for the end.
 5. Only add discovery or multicast exceptions after proving a real need.
 
-### `guest`
+### `hotspot`
 
 Steps:
 
@@ -496,7 +496,7 @@ Immediate rollback triggers:
 
 - validate UniFi backup
 - validate FreeRADIUS and CA
-- validate one `secure` profile on one admin device
+- validate one `Blackridge` profile on one admin device
 - prepare all VLANs, SSIDs, and port profiles in documentation
 
 ### Cutover start
@@ -516,7 +516,7 @@ Immediate rollback triggers:
 
 - migrate `home`
 - migrate `iot`
-- validate `guest`
+- validate `hotspot`
 
 ### Finalization
 
