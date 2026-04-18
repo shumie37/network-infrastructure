@@ -133,6 +133,50 @@ Internal network names remain functional. User-facing SSID names are branded.
 
 `infrastructure` has no Wi-Fi SSID in phase 1.
 
+## Current UniFi controller snapshot
+
+Use the current UniFi controller state as the operational source of truth when it differs from older planning notes.
+
+Observed working state from the controller screenshots captured on `2026-04-17`:
+
+### SSIDs
+
+| SSID | Network | Broadcast scope | Radios | Security | Observed clients |
+|---|---|---|---|---|---|
+| `Blackridge` | `Secure (2)` | all APs | `2.4 GHz`, `5 GHz` | `WPA3` | `2` |
+| `ShuMK` | `Home (3)` | all APs | `2.4 GHz`, `5 GHz` | `WPA2/WPA3` | `18` |
+| `ShuMK Guest` | `Hotspot (5)` | all APs | `2.4 GHz`, `5 GHz` | `WPA2/WPA3` | `1` |
+| `ShuMK IoT` | `IoT (4)` | all APs | `2.4 GHz`, `5 GHz` | `WPA2/WPA3` | `1` |
+
+Client counts above are a live snapshot, not a durable planning value.
+
+### Networks
+
+| Name | VLAN ID | Subnet | DHCP | Observed leases |
+|---|---|---|---|---|
+| `Internal` | `1` | `192.168.10.0/24` | server | `2 / 100` |
+| `Secure` | `2` | `192.168.20.0/24` | server | `3 / 100` |
+| `Home` | `3` | `192.168.30.0/24` | server | `22 / 100` |
+| `IoT` | `4` | `192.168.40.0/24` | server | `0 / 100` |
+| `Hotspot` | `5` | `192.168.50.0/24` | server | `3 / 100` |
+
+### WAN
+
+| Name | Interface | ISP | IPv4 address | Port |
+|---|---|---|---|---|
+| `Internet 1` | `WAN1` | `Astound Broadband` | `23.252.53.58` | `5` |
+
+### Network lists / port objects
+
+| Object | Type | Value |
+|---|---|---|
+| `Allow Rainier (DNS)` | port | `53` |
+| `Allow NAS (SMB)` | port | `445` |
+| `Allow Printer (IPP)` | port | `631` |
+| `Allow Printer (BONJ)` | port | `5353` |
+| `Allow Printer (JETD)` | port | `9100` |
+| `Allow Internal to Printer (HTTPS)` | port | `443` |
+
 ## VLAN and subnet plan
 
 | VLAN | Network | Subnet | Gateway |

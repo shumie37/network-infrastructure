@@ -119,6 +119,8 @@ Checks:
 - [ ] `NAS` object = `192.168.10.30`
 - [ ] `Home -> NAS SMB` rule points to `192.168.10.30`
 - [ ] `Home -> NAS Wake-on-LAN` rule points to `192.168.10.30`
+- [ ] `Home -> Rainier HTTPS` rule points to `192.168.10.10:443`
+- [ ] `Rainier -> HP Printer HTTPS` rule points to `192.168.40.10:443`
 - [ ] `Secure -> Infrastructure` rule still grants the intended broad admin path
 - [ ] `Home -> Secure` remains blocked
 - [ ] `IoT -> Secure` remains blocked
@@ -136,6 +138,11 @@ Current `rainier` UFW target state:
 | MQTT | `1883/tcp` | `Infrastructure` | internal automation only |
 | RADIUS | `1812/udp`, `1813/udp` | `Infrastructure` | UniFi infrastructure path only |
 | Internal container paths | `3000/tcp`, `8123/tcp`, `53/tcp`, `53/udp` | Docker bridge networks | required for local reverse proxy and container DNS behavior |
+
+Target published internal app path:
+
+- `printer.blackridge.shumie.net` terminates on `rainier` via Caddy and reverse proxies to `https://192.168.40.10`
+- expected consumers are `secure` and `home`
 
 ## Step 7: Validate WireGuard / VPN
 

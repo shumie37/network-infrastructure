@@ -48,6 +48,28 @@ Assumptions:
 - UniFi assigns rule IDs automatically; treat the `ID` column as controller-generated reference data rather than a user-controlled design field
 - UniFi may represent the `guest` network as the built-in `Hotspot` zone in the Zone-Based Firewall UI; treat `guest` and `Hotspot` as equivalent for policy implementation unless UniFi changes that platform behavior
 
+## Current live UniFi policy details
+
+The controller screenshots captured on `2026-04-17` confirm the following live policy details as the current working source of truth:
+
+- UniFi labels the infrastructure LAN as `Internal` in the policy UI
+- masquerade NAT is active for the internal routed networks toward the internet uplinks
+- `Home` allows DNS to `rainier` at `192.168.10.10`
+- `Home` has explicit printer exceptions to the IoT printer at `192.168.40.10`
+- `Secure` has explicit printer exceptions to the IoT printer at `192.168.40.10`
+- `Rainier` at `192.168.10.10` has an explicit HTTPS allow to the IoT printer at `192.168.40.10`
+- `Hotspot` is explicitly allowed DHCP, DHCPv6, and DNS to the gateway and blocked from internal zones
+
+Current observed printer-related objects and targets:
+
+| Object / Target | Value |
+| --- | --- |
+| Printer target | `192.168.40.10` |
+| `Allow Printer (BONJ)` | `UDP 5353` |
+| `Allow Printer (IPP)` | `TCP 631` |
+| `Allow Printer (JETD)` | `TCP 9100` |
+| `Allow Internal to Printer (HTTPS)` | `TCP 443` |
+
 | Name                                                | Action  | IP Version | Protocol | Src. Zone        | Src.                                    | Src. Port | Dst. Zone        | Dst.                           | Dst. Port      | ID      |
 | --------------------------------------------------- | ------- | ---------- | -------- | ---------------- | --------------------------------------- | --------- | ---------------- | ------------------------------ | -------------- | ------- |
 | `Allow Secure to Infrastructure`                    | `Allow` | `Both`     | `All`    | `secure`         | `Any`                                   | `Any`     | `infrastructure` | `Any`                          | `Any`          | `10000` |
@@ -64,6 +86,7 @@ Assumptions:
 | `Allow Home to IoT`                                 | `Allow` | `Both`     | `All`    | `home`           | `Any`                                   | `Any`     | `iot`            | `Any`                          | `Any`          | `10210` |
 | `Allow Home to Rainier DNS UDP`                     | `Allow` | `IPv4`     | `UDP`    | `home`           | `Any`                                   | `Any`     | `infrastructure` | `Rainier DNS`                  | `53`           | `10220` |
 | `Allow Home to Rainier DNS TCP`                     | `Allow` | `IPv4`     | `TCP`    | `home`           | `Any`                                   | `Any`     | `infrastructure` | `Rainier DNS`                  | `53`           | `10221` |
+| `Allow Home to Rainier HTTPS`                       | `Allow` | `IPv4`     | `TCP`    | `home`           | `Any`                                   | `Any`     | `infrastructure` | `192.168.10.10`                | `443`          | `10222` |
 | `Allow Home to NAS SMB`                             | `Allow` | `Both`     | `TCP`    | `home`           | `Any`                                   | `Any`     | `infrastructure` | `192.168.10.30`                | `445`          | `UniFi Assigned` |
 | `Allow Home to NAS Wake-on-LAN`                     | `Allow` | `Both`     | `UDP`    | `home`           | `Any`                                   | `Any`     | `infrastructure` | `192.168.10.30`                | `9`            | `UniFi Assigned` |
 | `Block Home to Infrastructure Default`              | `Block` | `Both`     | `All`    | `home`           | `Any`                                   | `Any`     | `infrastructure` | `Any`                          | `Any`          | `10290` |
@@ -77,6 +100,7 @@ Assumptions:
 | `Allow IoT to Internet`                             | `Allow` | `Both`     | `All`    | `iot`            | `Any`                                   | `Any`     | `external`       | `Any`                          | `Any`          | `10399` |
 | `Block Infrastructure to Secure`                    | `Block` | `Both`     | `All`    | `infrastructure` | `Any`                                   | `Any`     | `secure`         | `Any`                          | `Any`          | `10400` |
 | `Deferred: Infrastructure to Approved IoT Services` | `Review Later` | `Both` | `All` | `infrastructure` | `Rainier and Approved Automation Hosts` | `Any` | `iot` | `Approved IoT Targets` | `Object Ports` | `10410` |
+| `Allow Rainier to HP Printer HTTPS`                 | `Allow` | `IPv4`     | `TCP`    | `infrastructure` | `192.168.10.10`                         | `Any`     | `iot`            | `192.168.40.10`                | `443`          | `10411` |
 | `Block Infrastructure to Home`                      | `Block` | `Both`     | `All`    | `infrastructure` | `Any`                                   | `Any`     | `home`           | `Any`                          | `Any`          | `10420` |
 | `Allow Infrastructure to Internet`                  | `Allow` | `Both`     | `All`    | `infrastructure` | `Any`                                   | `Any`     | `external`       | `Any`                          | `Any`          | `10499` |
 | `Block Guest to Secure`                             | `Block` | `Both`     | `All`    | `guest`          | `Any`                                   | `Any`     | `secure`         | `Any`                          | `Any`          | `10500` |
@@ -102,6 +126,7 @@ Allowed by design intent:
 
 - DNS to Rainier
 - NAS access only for explicitly approved user-facing file services
+- HTTPS to Rainier for explicitly published user-facing reverse-proxied apps such as the printer Web UI
 - no broad host reachability
 - no admin surfaces
 
@@ -127,6 +152,7 @@ Allowed by design intent:
 
 - only specific infrastructure hosts may initiate as needed
 - primary example is Rainier and Home Assistant related service flows
+- Rainier may reach the HP printer at `192.168.40.10:443` so Caddy can publish the printer Web UI
 - NAS and UniFi gear do not get broad IoT access
 
 ### Admin surfaces
@@ -140,6 +166,12 @@ This includes:
 - NAS administration
 - Blackcomb administration
 - SSH to infrastructure hosts
+
+Published internal app note:
+
+- `printer.blackridge.shumie.net` is intended to be reachable from `secure` and `home`
+- `secure` already inherits this through broad access to `infrastructure`
+- `home` requires an explicit `192.168.10.10:443` allow because `home -> infrastructure` remains deny-by-default
 
 Phase 1 allows broad admin access from `secure` and `vpn` rather than service-by-service micro-segmentation.
 
