@@ -148,9 +148,9 @@ Target published internal app path:
 
 Checks:
 
-- [ ] one WireGuard client can connect successfully
-- [ ] client receives a `192.168.60.x` address
-- [ ] VPN client DNS resolves through `192.168.10.10`
+- [x] one WireGuard client can connect successfully
+- [x] client receives a `192.168.60.x` address
+- [x] VPN client DNS resolves through `192.168.10.10`
 - [ ] VPN client has the intended `secure`-equivalent administrative reach
 
 ## Step 8: Remove stale references

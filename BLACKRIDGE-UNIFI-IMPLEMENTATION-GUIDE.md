@@ -262,6 +262,10 @@ Validation checkpoint:
 
 ## Phase 4.5: Stand up remote access on WireGuard
 
+Primary execution reference:
+
+- use `BLACKRIDGE-WIREGUARD-SETUP.md` for the exact server, peer, DNS, and validation values
+
 Goal:
 
 - replace Teleport assumptions with a documented, explicit WireGuard remote-admin path
