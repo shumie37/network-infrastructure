@@ -164,3 +164,7 @@ Teleport can remain available as a convenience fallback, but the documented Blac
 
 - WireGuard for durable remote admin
 - `rainier` as VPN DNS
+
+For the planned public endpoint name and Route 53 DDNS model, see:
+
+- `BLACKRIDGE-AWS-ROUTE53.md`

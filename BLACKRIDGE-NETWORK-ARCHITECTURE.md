@@ -15,6 +15,7 @@ This document defines the target-state network architecture for the Blackridge s
 - remote access posture
 - wired port design
 - rollout sequencing
+- AWS / Route 53 network dependencies
 
 This is a greenfield target design, not a description of the current flat-network state.
 
@@ -218,6 +219,14 @@ Client counts above are a live snapshot, not a durable planning value.
 | `192.168.10.30` | NAS |
 
 ## DHCP and DNS model
+
+### Public DNS authority
+
+Public DNS authority for Blackridge remains in AWS Route 53.
+
+Durable AWS and Route 53 guidance lives in:
+
+- `BLACKRIDGE-AWS-ROUTE53.md`
 
 ### DHCP
 
